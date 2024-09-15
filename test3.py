@@ -6,6 +6,7 @@ from sklearn.metrics import accuracy_score, classification_report
 import nltk
 from nltk.corpus import stopwords
 import string
+import joblib  # Import joblib for saving/loading models
 import streamlit as st
 import matplotlib.pyplot as plt
 
@@ -50,6 +51,10 @@ X_train, X_test, y_train, y_test = train_test_split(X_tfidf, y, test_size=0.3, r
 # Train model
 model = MultinomialNB()
 model.fit(X_train, y_train)
+
+# Save the Naive Bayes model and TF-IDF vectorizer with method-based filenames
+joblib.dump(model, 'naive_bayes_model.joblib')   # Changed to reflect method name
+joblib.dump(tfidf, 'tfidf_vectorizer.joblib')    # TF-IDF vectorizer already reflects the method
 
 # Evaluate model
 y_pred = model.predict(X_test)
