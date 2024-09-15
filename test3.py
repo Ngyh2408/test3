@@ -2,6 +2,8 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, classification_report
 import nltk
 from nltk.corpus import stopwords
@@ -48,25 +50,45 @@ X_tfidf = tfidf.fit_transform(X)
 # Train-test split
 X_train, X_test, y_train, y_test = train_test_split(X_tfidf, y, test_size=0.3, random_state=42)
 
-# Train model
-model = MultinomialNB()
-model.fit(X_train, y_train)
+# Create models: Naive Bayes, SVM, and Logistic Regression
+models = {
+    'Naive Bayes': MultinomialNB(),
+    'Support Vector Machine': SVC(kernel='linear', random_state=42),
+    'Logistic Regression': LogisticRegression(random_state=42, max_iter=500)
+}
 
-# Save the Naive Bayes model and TF-IDF vectorizer with method-based filenames
-joblib.dump(model, 'naive_bayes_model.joblib')   # Changed to reflect method name
-joblib.dump(tfidf, 'tfidf_vectorizer.joblib')    # TF-IDF vectorizer already reflects the method
+# Train each model, save them, and evaluate performance
+model_performance = {}
 
-# Evaluate model
+for name, model in models.items():
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+    report = classification_report(y_test, y_pred, output_dict=True)
+
+    # Save the model to a joblib file named after the method
+    joblib.dump(model, f'{name.replace(" ", "_").lower()}_model.joblib')
+
+    # Save performance metrics
+    model_performance[name] = {
+        'accuracy': accuracy,
+        'classification_report': classification_report(y_test, y_pred)
+    }
+
+# Save the TF-IDF vectorizer
+joblib.dump(tfidf, 'tfidf_vectorizer.joblib')
+
+# Display model performance on Streamlit
+st.write("### Model Performance Comparison")
+
+for name, performance in model_performance.items():
+    st.write(f"**{name}**")
+    st.write(f"Accuracy: {performance['accuracy'] * 100:.2f}%")
+    st.text(performance['classification_report'])
+
+# Create DataFrames for actual and predicted sentiment counts using Naive Bayes model
+model = joblib.load('naive_bayes_model.joblib')  # Load Naive Bayes model as default for further steps
 y_pred = model.predict(X_test)
-accuracy = accuracy_score(y_test, y_pred)
-report = classification_report(y_test, y_pred, output_dict=True)
-
-# Display model accuracy
-st.write(f"### Model Accuracy: *{accuracy * 100:.2f}%*")
-
-# Display classification report
-st.write("### Classification Report:")
-st.text(classification_report(y_test, y_pred))
 
 # Create DataFrames for actual and predicted sentiment counts
 actual_counts = pd.DataFrame(y_test.value_counts()).reset_index()
@@ -79,10 +101,10 @@ predicted_counts.columns = ['Sentiment', 'Count_Predicted']
 sentiment_comparison = pd.merge(actual_counts, predicted_counts, on='Sentiment', how='outer').fillna(0)
 
 # Plot actual vs predicted sentiment comparison
-st.write("### Actual vs Predicted Sentiment Comparison:")
+st.write("### Actual vs Predicted Sentiment Comparison (Naive Bayes):")
 fig, ax = plt.subplots(figsize=(8, 6))
 sentiment_comparison.plot(kind='bar', x='Sentiment', ax=ax, color=['skyblue', 'orange'])
-plt.title('Actual vs Predicted Sentiment Counts')
+plt.title('Actual vs Predicted Sentiment Counts (Naive Bayes)')
 plt.xlabel('Sentiment')
 plt.ylabel('Count')
 plt.xticks(rotation=45)
@@ -92,19 +114,19 @@ st.pyplot(fig)
 st.write("### Actual and Predicted Review Counts Table:")
 st.table(sentiment_comparison)
 
-# Predict sentiment
-def predict_sentiment(user_comment):
+# Predict sentiment with the selected model (Naive Bayes as default)
+def predict_sentiment(user_comment, model):
     processed_comment = preprocess_text(user_comment)
     user_comment_tfidf = tfidf.transform([processed_comment])
     prediction = model.predict(user_comment_tfidf)
     return prediction[0]
 
 # User input for predicting sentiment
-st.write("### Predict Sentiment from Your Review")
+st.write("### Predict Sentiment from Your Review (Using Naive Bayes)")
 user_comment = st.text_input("Enter your product review:")
 
 if user_comment:
-    sentiment = predict_sentiment(user_comment)
+    sentiment = predict_sentiment(user_comment, model)
     st.write(f"*The sentiment of the comment is:* {sentiment}")
 
 # Calculate sentiment distribution
