@@ -73,24 +73,27 @@ actual_counts = pd.DataFrame(y_test.value_counts()).reset_index().rename(columns
 predicted_counts = pd.DataFrame(pd.Series(y_pred).value_counts()).reset_index().rename(columns={'index': 'Sentiment', 0: 'Count_Predicted'})
 
 # Debugging to print columns
-print("Actual counts columns:", actual_counts.columns)
-print("Predicted counts columns:", predicted_counts.columns)
+st.write("Actual counts columns:", actual_counts.columns)
+st.write("Predicted counts columns:", predicted_counts.columns)
 
 # Ensure the Sentiment columns are properly aligned and match
-actual_counts['Sentiment'] = actual_counts['Sentiment'].astype(str)
-predicted_counts['Sentiment'] = predicted_counts['Sentiment'].astype(str)
+if 'Sentiment' in actual_counts.columns and 'Sentiment' in predicted_counts.columns:
+    actual_counts['Sentiment'] = actual_counts['Sentiment'].astype(str)
+    predicted_counts['Sentiment'] = predicted_counts['Sentiment'].astype(str)
 
-# Merge actual and predicted counts
-sentiment_comparison = pd.merge(actual_counts, predicted_counts, on='Sentiment', how='outer').fillna(0)
+    # Merge actual and predicted counts
+    sentiment_comparison = pd.merge(actual_counts, predicted_counts, on='Sentiment', how='outer').fillna(0)
 
-# Plot actual vs predicted sentiment comparison
-fig, ax = plt.subplots(figsize=(8, 6))
-sentiment_comparison.plot(kind='bar', x='Sentiment', ax=ax, color=['skyblue', 'orange'])
-plt.title('Actual vs Predicted Sentiment Counts')
-plt.xlabel('Sentiment')
-plt.ylabel('Count')
-plt.xticks(rotation=45)
-st.pyplot(fig)
+    # Plot actual vs predicted sentiment comparison
+    fig, ax = plt.subplots(figsize=(8, 6))
+    sentiment_comparison.plot(kind='bar', x='Sentiment', ax=ax, color=['skyblue', 'orange'])
+    plt.title('Actual vs Predicted Sentiment Counts')
+    plt.xlabel('Sentiment')
+    plt.ylabel('Count')
+    plt.xticks(rotation=45)
+    st.pyplot(fig)
+else:
+    st.error("The 'Sentiment' column is missing in one of the DataFrames.")
 
 # Predict sentiment
 def predict_sentiment(user_comment):
