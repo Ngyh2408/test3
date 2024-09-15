@@ -71,7 +71,7 @@ print(f"Accuracy: {accuracy * 100:.2f}%")
 print(f"Precision: {precision * 100:.2f}%")
 print(f"Recall: {recall * 100:.2f}%")
 print(f"F1 Score: {f1 * 100:.2f}%")
-print("\\nClassification Report:")
+print("\nClassification Report:")
 print(classification_report(y_test, y_pred))
 
 # Generate and visualize the confusion matrix
@@ -110,11 +110,3 @@ while True:
     sentiment = predict_sentiment(user_comment)
     print(f"The sentiment of the comment is: {sentiment}")
     visualize_user_sentiments()
-'''
-
-# Saving the Python script
-file_path = '/mnt/data/sentiment_analysis.py'
-with open(file_path, 'w') as f:
-    f.write(code)
-
-file_path
