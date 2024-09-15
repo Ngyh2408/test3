@@ -10,7 +10,6 @@ import string
 import joblib  # Import joblib for saving/loading models
 import streamlit as st
 import matplotlib.pyplot as plt
-from io import StringIO
 
 # Download stopwords
 nltk.download('stopwords')
@@ -127,6 +126,8 @@ if user_comment:
     color = 'green' if sentiment == 'positive' else 'red'
     
     # Display sentiment with color
-    st.markdown(f"<p style='color:{color}; font-size:20px;'>*The sentiment of the comment is:* {sentiment}</p>", unsafe_allow_html=True)
+    sentiment_text = f"*The sentiment of the comment is:* {sentiment}"
+    sentiment_html = f"<p style='color:{color}; font-size:20px;'>{sentiment_text}</p>"
+    st.markdown(sentiment_html, unsafe_allow_html=True)
 
 # The pie chart is displayed only if a file is uploaded
