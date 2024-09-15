@@ -33,9 +33,10 @@ def preprocess_text(text):
     words = [word for word in text.split() if word not in stop_words]
     return ' '.join(words)
 
+# Apply preprocessing
+df['Review'] = df['Review'].apply(preprocess_text)
 
-
-# Split data
+# Prepare data for modeling
 X = df['Review']
 y = df['Sentiment']
 
@@ -102,10 +103,7 @@ sentiment_distribution = df['Sentiment'].value_counts()
 sentiment_labels = sentiment_distribution.index
 sentiment_sizes = sentiment_distribution.values
 
-# Display the count of reviews in a table under the chart
-review_count_table = pd.DataFrame({'Sentiment': sentiment_labels, 'Review Count': sentiment_sizes})
-
-# Define colors for sentiment categories, ensure you have one color per category
+# Define colors for sentiment categories
 colors = ['lightblue', 'lightcoral', 'lightgreen', 'lightskyblue']
 
 # Calculate percentages
@@ -119,5 +117,6 @@ ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
 st.pyplot(fig)
 
 # Display the review count table again under the pie chart
+review_count_table = pd.DataFrame({'Sentiment': sentiment_labels, 'Review Count': sentiment_sizes})
 st.write("### Review Count Table:")
 st.table(review_count_table)
