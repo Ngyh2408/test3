@@ -2,9 +2,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import accuracy_score
 import nltk
 from nltk.corpus import stopwords
 import string
@@ -49,34 +47,57 @@ X_tfidf = tfidf.fit_transform(X)
 # Train-test split
 X_train, X_test, y_train, y_test = train_test_split(X_tfidf, y, test_size=0.3, random_state=42)
 
-# Initialize classifiers
-models = {
-    "Multinomial Naive Bayes": MultinomialNB(),
-    "K-Nearest Neighbors": KNeighborsClassifier(),
-    "Logistic Regression": LogisticRegression(max_iter=1000)
-}
+# Train model
+model = MultinomialNB()
+model.fit(X_train, y_train)
 
-results = {}
+# Evaluate model
+y_pred = model.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
 
-# Train and evaluate each model
-for name, model in models.items():
-    model.fit(X_train, y_train)
-    y_pred = model.predict(X_test)
-    accuracy = accuracy_score(y_test, y_pred)
-    report = classification_report(y_test, y_pred)
-    
-    results[name] = {
-        "accuracy": accuracy,
-        "report": report
-    }
+# Display model accuracy
+st.write(f"### Model Accuracy: *{accuracy * 100:.2f}%*")
 
-# Display results for each model
-for name, result in results.items():
-    st.write(f"### {name} Classification Report:")
-    st.text(result["report"])
-    st.write(f"*Accuracy:* {result['accuracy'] * 100:.2f}%")
+# Create DataFrames for actual and predicted sentiment counts
+actual_counts = pd.DataFrame(y_test.value_counts()).reset_index()
+actual_counts.columns = ['Sentiment', 'Count_Actual']
 
-# Plot sentiment distribution
+predicted_counts = pd.DataFrame(pd.Series(y_pred).value_counts()).reset_index()
+predicted_counts.columns = ['Sentiment', 'Count_Predicted']
+
+# Merge actual and predicted counts
+sentiment_comparison = pd.merge(actual_counts, predicted_counts, on='Sentiment', how='outer').fillna(0)
+
+# Plot actual vs predicted sentiment comparison
+st.write("### Actual vs Predicted Sentiment Comparison:")
+fig, ax = plt.subplots(figsize=(8, 6))
+sentiment_comparison.plot(kind='bar', x='Sentiment', ax=ax, color=['skyblue', 'orange'])
+plt.title('Actual vs Predicted Sentiment Counts')
+plt.xlabel('Sentiment')
+plt.ylabel('Count')
+plt.xticks(rotation=45)
+st.pyplot(fig)
+
+# Display the count of actual and predicted reviews in a table under the bar chart
+st.write("### Actual and Predicted Review Counts Table:")
+st.table(sentiment_comparison)
+
+# Predict sentiment
+def predict_sentiment(user_comment):
+    processed_comment = preprocess_text(user_comment)
+    user_comment_tfidf = tfidf.transform([processed_comment])
+    prediction = model.predict(user_comment_tfidf)
+    return prediction[0]
+
+# User input for predicting sentiment
+st.write("### Predict Sentiment from Your Review")
+user_comment = st.text_input("Enter your product review:")
+
+if user_comment:
+    sentiment = predict_sentiment(user_comment)
+    st.write(f"*The sentiment of the comment is:* {sentiment}")
+
+# Calculate sentiment distribution
 st.write("### Sentiment Distribution (Post-Processing):")
 sentiment_distribution = df['Sentiment'].value_counts()
 sentiment_labels = sentiment_distribution.index
@@ -95,22 +116,7 @@ ax.pie(sentiment_percentages, labels=sentiment_labels, autopct='%1.1f%%', starta
 ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
 st.pyplot(fig)
 
-# Display the review count table
+# Display the review count table again under the pie chart
 review_count_table = pd.DataFrame({'Sentiment': sentiment_labels, 'Review Count': sentiment_sizes})
 st.write("### Review Count Table:")
 st.table(review_count_table)
-
-# Predict sentiment
-def predict_sentiment(user_comment):
-    processed_comment = preprocess_text(user_comment)
-    user_comment_tfidf = tfidf.transform([processed_comment])
-    prediction = models["Multinomial Naive Bayes"].predict(user_comment_tfidf)
-    return prediction[0]
-
-# User input for predicting sentiment
-st.write("### Predict Sentiment from Your Review")
-user_comment = st.text_input("Enter your product review:")
-
-if user_comment:
-    sentiment = predict_sentiment(user_comment)
-    st.write(f"*The sentiment of the comment is:* {sentiment}")
