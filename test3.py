@@ -22,6 +22,8 @@ df = pd.read_csv('Dataset-SA.csv')
 stop_words = set(stopwords.words('english'))
 
 def preprocess_text(text):
+    if not isinstance(text, str):  # Check if text is a string
+        return ''
     text = text.lower()
     text = text.translate(str.maketrans('', '', string.punctuation))
     words = [word for word in text.split() if word not in stop_words]
@@ -79,6 +81,8 @@ if uploaded_file is not None:
     if 'Review' not in uploaded_df.columns:
         st.error("The uploaded file must contain a 'Review' column.")
     else:
+        # Ensure 'Review' column is a string
+        uploaded_df['Review'] = uploaded_df['Review'].astype(str)
         uploaded_df['Review'] = uploaded_df['Review'].apply(preprocess_text)
         X_uploaded = uploaded_df['Review']
         X_uploaded_tfidf = tfidf.transform(X_uploaded)
