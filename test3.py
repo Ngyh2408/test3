@@ -8,23 +8,12 @@ from sklearn.metrics import accuracy_score, classification_report
 import nltk
 from nltk.corpus import stopwords
 import string
-import streamlit as st
-import matplotlib.pyplot as plt
 
 # Download stopwords
 nltk.download('stopwords')
 
 # Load the dataset
 df = pd.read_csv('Dataset-SA.csv')
-
-# Count the number of reviews in the dataset
-total_reviews = len(df)
-
-# Streamlit app header
-st.title('Sentiment Analysis on Product Reviews')
-
-# Display the total number of reviews before preprocessing
-st.write(f"*Total Number of Reviews before Preprocessing:* {total_reviews}")
 
 # Preprocessing function
 stop_words = set(stopwords.words('english'))
@@ -63,7 +52,7 @@ for name, model in models.items():
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
     accuracy = accuracy_score(y_test, y_pred)
-    report = classification_report(y_test, y_pred)
+    report = classification_report(y_test, y_pred, output_dict=True)
     
     results[name] = {
         "accuracy": accuracy,
@@ -72,47 +61,13 @@ for name, model in models.items():
 
 # Display results for each model
 for name, result in results.items():
-    st.write(f"### {name} Classification Report:")
-    st.text(result["report"])
-    st.write(f"*Accuracy:* {result['accuracy'] * 100:.2f}%")
-
-# Plot sentiment distribution
-st.write("### Sentiment Distribution (Post-Processing):")
-sentiment_distribution = df['Sentiment'].value_counts()
-sentiment_labels = sentiment_distribution.index
-sentiment_sizes = sentiment_distribution.values
-
-# Define colors for sentiment categories
-colors = ['lightblue', 'lightcoral', 'lightgreen', 'lightskyblue']
-
-# Calculate percentages
-sentiment_percentages = sentiment_sizes / sentiment_sizes.sum() * 100
-
-# Plot pie chart
-st.write("### Sentiment Distribution Pie Chart:")
-fig, ax = plt.subplots(figsize=(8, 6))
-ax.pie(sentiment_percentages, labels=sentiment_labels, autopct='%1.1f%%', startangle=140, colors=colors[:len(sentiment_labels)])
-ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
-st.pyplot(fig)
-
-# Display the review count table
-review_count_table = pd.DataFrame({'Sentiment': sentiment_labels, 'Review Count': sentiment_sizes})
-st.write("### Review Count Table:")
-st.table(review_count_table)
-
-# Predict sentiment
-def predict_sentiment(user_comment, model):
-    processed_comment = preprocess_text(user_comment)
-    user_comment_tfidf = tfidf.transform([processed_comment])
-    prediction = model.predict(user_comment_tfidf)
-    return prediction[0]
-
-# User input for predicting sentiment
-st.write("### Predict Sentiment from Your Review")
-selected_model = st.selectbox("Choose a model:", list(models.keys()))
-user_comment = st.text_input("Enter your product review:")
-
-if user_comment:
-    model = models[selected_model]
-    sentiment = predict_sentiment(user_comment, model)
-    st.write(f"*The sentiment of the comment is:* {sentiment}")
+    print(f"### {name} Statistics:")
+    print(f"*Accuracy:* {result['accuracy'] * 100:.2f}%")
+    print("Classification Report:")
+    for label, metrics in result['report'].items():
+        if label != 'accuracy':  # Skip 'accuracy' report as it's already displayed
+            print(f"Label: {label}")
+            print(f"  Precision: {metrics['precision']:.2f}")
+            print(f"  Recall: {metrics['recall']:.2f}")
+            print(f"  F1-Score: {metrics['f1-score']:.2f}")
+    print("\n")
