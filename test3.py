@@ -54,21 +54,46 @@ st.write(f"Model Accuracy: {accuracy * 100:.2f}%")
 st.write("Classification Report:")
 st.text(classification_report(y_test, y_pred))
 
-# Determine the unique labels
-unique_labels = sorted(set(y_test) | set(y_pred))
-print("Unique labels:", unique_labels)
-
 # Confusion Matrix
-def plot_confusion_matrix(cm, labels):
-    plt.figure(figsize=(10, 7))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=labels, yticklabels=labels)
-    plt.xlabel('Predicted')
-    plt.ylabel('Actual')
-    plt.title('Confusion Matrix')
-    st.pyplot()
+cm = confusion_matrix(y_test, y_pred)
 
-cm = confusion_matrix(y_test, y_pred, labels=unique_labels)
-plot_confusion_matrix(cm, unique_labels)
+# Bar Chart for Sentiment Distribution
+st.subheader("Sentiment Distribution (Predicted vs Actual)")
+
+# Create a DataFrame for visualization
+sentiment_counts = pd.DataFrame({'Actual': y_test, 'Predicted': y_pred})
+actual_counts = sentiment_counts['Actual'].value_counts().reset_index().rename(columns={'index': 'Sentiment', 'Actual': 'Count'})
+predicted_counts = sentiment_counts['Predicted'].value_counts().reset_index().rename(columns={'index': 'Sentiment', 'Predicted': 'Count'})
+
+# Merge actual and predicted counts
+sentiment_comparison = pd.merge(actual_counts, predicted_counts, on='Sentiment', how='outer', suffixes=('_Actual', '_Predicted')).fillna(0)
+
+# Plot bar chart
+fig, ax = plt.subplots(figsize=(8, 6))
+sentiment_comparison.plot(kind='bar', x='Sentiment', ax=ax, color=['skyblue', 'orange'])
+plt.title('Actual vs Predicted Sentiment Counts')
+plt.xlabel('Sentiment')
+plt.ylabel('Count')
+plt.xticks(rotation=45)
+st.pyplot(fig)
+
+# Bar Chart for Confusion Matrix as True/False Predictions
+st.subheader("True/False Predictions Distribution")
+
+# Calculate True Positives, False Positives, True Negatives, and False Negatives
+tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
+
+# Bar chart for TP, FP, TN, FN
+fig2, ax2 = plt.subplots(figsize=(8, 6))
+categories = ['True Negative', 'False Positive', 'False Negative', 'True Positive']
+values = [tn, fp, fn, tp]
+
+ax2.bar(categories, values, color=['green', 'red', 'red', 'green'])
+plt.title('Prediction Outcomes')
+plt.xlabel('Outcome')
+plt.ylabel('Count')
+plt.xticks(rotation=45)
+st.pyplot(fig2)
 
 # Predict sentiment
 def predict_sentiment(user_comment):
