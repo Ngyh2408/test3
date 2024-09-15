@@ -63,88 +63,89 @@ st.title('Sentiment Analysis on Product Reviews')
 # Display the total number of reviews before preprocessing
 st.write(f"*Total Number of Reviews before Preprocessing:* {len(df)}")
 
-# Dropdown list to choose between entering a review or uploading a file
-option = st.selectbox(
-    "Choose an option:",
-    ["Enter Review", "Upload File"],
-    index=0  # Default option is "Enter Review"
-)
+# File uploader
+uploaded_file = st.file_uploader("Upload a CSV file containing reviews")
 
-if option == "Enter Review":
-    # User input for predicting sentiment
-    user_comment = st.text_input("Enter your product review:")
+# Predict sentiment with the selected model (Naive Bayes as default)
+def predict_sentiment(user_comment, model):
+    processed_comment = preprocess_text(user_comment)
+    user_comment_tfidf = tfidf.transform([processed_comment])
+    prediction = model.predict(user_comment_tfidf)
+    return prediction[0]
 
-    if user_comment:
-        # Load the Naive Bayes model
+# Handle file upload
+if uploaded_file is not None:
+    # Read and preprocess the uploaded file
+    uploaded_df = pd.read_csv(uploaded_file)
+    
+    # Auto-detect the review column
+    possible_columns = ['review', 'text', 'content']
+    review_column = None
+    
+    for column in uploaded_df.columns:
+        if any(keyword in column.lower() for keyword in possible_columns):
+            review_column = column
+            break
+
+    if review_column is None:
+        st.error("No suitable review column detected. Please select the column manually.")
+        # Display available columns and let the user select if auto-detection fails
+        st.write("### Available Columns in the Uploaded File:")
+        st.write(uploaded_df.columns)
+        review_column = st.selectbox("Select the column containing reviews:", options=uploaded_df.columns)
+
+    if review_column:
+        # Ensure the selected column is a string
+        uploaded_df[review_column] = uploaded_df[review_column].astype(str)
+        uploaded_df[review_column] = uploaded_df[review_column].apply(preprocess_text)
+        X_uploaded = uploaded_df[review_column]
+        X_uploaded_tfidf = tfidf.transform(X_uploaded)
+        
+        # Load the Naive Bayes model by default
         model = joblib.load('naive_bayes_model.joblib')
-        sentiment = predict_sentiment(user_comment, model)
+        y_pred_uploaded = model.predict(X_uploaded_tfidf)
+        uploaded_df['Sentiment'] = y_pred_uploaded
         
-        # Define color based on sentiment
-        if sentiment == 'positive':
-            sentiment_html = "<p style='font-size:20px;'>The sentiment of the comment is: <span style='color:green;'>positive</span></p>"
-        elif sentiment == 'negative':
-            sentiment_html = "<p style='font-size:20px;'>The sentiment of the comment is: <span style='color:red;'>negative</span></p>"
-        else:
-            sentiment_html = f"<p style='font-size:20px;'>The sentiment of the comment is: {sentiment}</p>"
-        
-        # Display sentiment with color
-        st.markdown(sentiment_html, unsafe_allow_html=True)
+        # Calculate sentiment distribution
+        sentiment_distribution = uploaded_df['Sentiment'].value_counts()
+        sentiment_labels = sentiment_distribution.index
+        sentiment_sizes = sentiment_distribution.values
 
-elif option == "Upload File":
-    # File uploader
-    uploaded_file = st.file_uploader("Upload a CSV file containing reviews")
+        # Define colors for sentiment categories
+        colors = ['lightblue', 'lightcoral', 'lightgreen', 'lightskyblue']
 
-    if uploaded_file is not None:
-        # Read and preprocess the uploaded file
-        uploaded_df = pd.read_csv(uploaded_file)
-        
-        # Auto-detect the review column
-        possible_columns = ['review', 'text', 'content']
-        review_column = None
-        
-        for column in uploaded_df.columns:
-            if any(keyword in column.lower() for keyword in possible_columns):
-                review_column = column
-                break
+        # Calculate percentages
+        sentiment_percentages = sentiment_sizes / sentiment_sizes.sum() * 100
 
-        if review_column is None:
-            st.error("No suitable review column detected. Please select the column manually.")
-            # Display available columns and let the user select if auto-detection fails
-            st.write("### Available Columns in the Uploaded File:")
-            st.write(uploaded_df.columns)
-            review_column = st.selectbox("Select the column containing reviews:", options=uploaded_df.columns)
+        # Plot pie chart
+        st.write("### Sentiment Distribution Pie Chart (Uploaded File):")
+        fig, ax = plt.subplots(figsize=(8, 6))
+        ax.pie(sentiment_percentages, labels=sentiment_labels, autopct='%1.1f%%', startangle=140, colors=colors[:len(sentiment_labels)])
+        ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+        st.pyplot(fig)
 
-        if review_column:
-            # Ensure the selected column is a string
-            uploaded_df[review_column] = uploaded_df[review_column].astype(str)
-            uploaded_df[review_column] = uploaded_df[review_column].apply(preprocess_text)
-            X_uploaded = uploaded_df[review_column]
-            X_uploaded_tfidf = tfidf.transform(X_uploaded)
-            
-            # Load the Naive Bayes model by default
-            model = joblib.load('naive_bayes_model.joblib')
-            y_pred_uploaded = model.predict(X_uploaded_tfidf)
-            uploaded_df['Sentiment'] = y_pred_uploaded
-            
-            # Calculate sentiment distribution
-            sentiment_distribution = uploaded_df['Sentiment'].value_counts()
-            sentiment_labels = sentiment_distribution.index
-            sentiment_sizes = sentiment_distribution.values
+        # Display the review count table
+        review_count_table = pd.DataFrame({'Sentiment': sentiment_labels, 'Review Count': sentiment_sizes})
+        st.write("### Review Count Table (Uploaded File):")
+        st.table(review_count_table)
 
-            # Define colors for sentiment categories
-            colors = ['lightblue', 'lightcoral', 'lightgreen', 'lightskyblue']
+# User input for predicting sentiment
+user_comment = st.text_input("Enter your product review:")
 
-            # Calculate percentages
-            sentiment_percentages = sentiment_sizes / sentiment_sizes.sum() * 100
+if user_comment:
+    # Load the Naive Bayes model
+    model = joblib.load('naive_bayes_model.joblib')
+    sentiment = predict_sentiment(user_comment, model)
+    
+    # Define color based on sentiment
+    if sentiment == 'positive':
+        sentiment_html = "<p style='font-size:20px;'>The sentiment of the comment is: <span style='color:green;'>positive</span></p>"
+    elif sentiment == 'negative':
+        sentiment_html = "<p style='font-size:20px;'>The sentiment of the comment is: <span style='color:red;'>negative</span></p>"
+    else:
+        sentiment_html = f"<p style='font-size:20px;'>The sentiment of the comment is: {sentiment}</p>"
+    
+    # Display sentiment with color
+    st.markdown(sentiment_html, unsafe_allow_html=True)
 
-            # Plot pie chart
-            st.write("### Sentiment Distribution Pie Chart (Uploaded File):")
-            fig, ax = plt.subplots(figsize=(8, 6))
-            ax.pie(sentiment_percentages, labels=sentiment_labels, autopct='%1.1f%%', startangle=140, colors=colors[:len(sentiment_labels)])
-            ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
-            st.pyplot(fig)
-
-            # Display the review count table
-            review_count_table = pd.DataFrame({'Sentiment': sentiment_labels, 'Review Count': sentiment_sizes})
-            st.write("### Review Count Table (Uploaded File):")
-            st.table(review_count_table)
+# The pie chart is displayed only if a file is uploaded
