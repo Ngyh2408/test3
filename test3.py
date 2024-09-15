@@ -4,7 +4,6 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
-from sklearn.metrics import accuracy_score, classification_report
 import nltk
 from nltk.corpus import stopwords
 import string
@@ -57,36 +56,15 @@ models = {
     'Logistic Regression': LogisticRegression(random_state=42, max_iter=500)
 }
 
-# Train each model, save them, and evaluate performance
-model_performance = {}
-
+# Train each model and save them
 for name, model in models.items():
     model.fit(X_train, y_train)
-    y_pred = model.predict(X_test)
-    accuracy = accuracy_score(y_test, y_pred)
-    report = classification_report(y_test, y_pred, output_dict=True)
-
-    # Save the model to a joblib file named after the method
     joblib.dump(model, f'{name.replace(" ", "_").lower()}_model.joblib')
-
-    # Save performance metrics
-    model_performance[name] = {
-        'accuracy': accuracy,
-        'classification_report': classification_report(y_test, y_pred)
-    }
 
 # Save the TF-IDF vectorizer
 joblib.dump(tfidf, 'tfidf_vectorizer.joblib')
 
-# Display model performance on Streamlit
-st.write("### Model Performance Comparison")
-
-for name, performance in model_performance.items():
-    st.write(f"**{name}**")
-    st.write(f"Accuracy: {performance['accuracy'] * 100:.2f}%")
-    st.text(performance['classification_report'])
-
-# Create DataFrames for actual and predicted sentiment counts using Naive Bayes model
+# Load the Naive Bayes model for displaying results
 model = joblib.load('naive_bayes_model.joblib')  # Load Naive Bayes model as default for further steps
 y_pred = model.predict(X_test)
 
