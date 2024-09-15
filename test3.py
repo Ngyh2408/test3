@@ -72,14 +72,14 @@ plot_confusion_matrix(cm, unique_labels)
 actual_counts = pd.DataFrame(y_test.value_counts()).reset_index().rename(columns={'index': 'Sentiment', 'Sentiment': 'Count_Actual'})
 predicted_counts = pd.DataFrame(pd.Series(y_pred).value_counts()).reset_index().rename(columns={'index': 'Sentiment', 0: 'Count_Predicted'})
 
-# Display the DataFrames for debugging
+# Display DataFrames for debugging
 st.write("Actual counts DataFrame:")
 st.write(actual_counts)
 
 st.write("Predicted counts DataFrame:")
 st.write(predicted_counts)
 
-# Ensure the Sentiment columns are properly aligned and match
+# Check if the 'Sentiment' column exists and fix if missing
 if 'Sentiment' in actual_counts.columns and 'Sentiment' in predicted_counts.columns:
     actual_counts['Sentiment'] = actual_counts['Sentiment'].astype(str)
     predicted_counts['Sentiment'] = predicted_counts['Sentiment'].astype(str)
@@ -97,6 +97,10 @@ if 'Sentiment' in actual_counts.columns and 'Sentiment' in predicted_counts.colu
     st.pyplot(fig)
 else:
     st.error("The 'Sentiment' column is missing in one of the DataFrames.")
+    if 'Sentiment' not in actual_counts.columns:
+        st.error("The 'Sentiment' column is missing in actual_counts DataFrame.")
+    if 'Sentiment' not in predicted_counts.columns:
+        st.error("The 'Sentiment' column is missing in predicted_counts DataFrame.")
 
 # Predict sentiment
 def predict_sentiment(user_comment):
