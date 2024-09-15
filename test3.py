@@ -72,9 +72,12 @@ plot_confusion_matrix(cm, unique_labels)
 actual_counts = pd.DataFrame(y_test.value_counts()).reset_index().rename(columns={'index': 'Sentiment', 'Sentiment': 'Count_Actual'})
 predicted_counts = pd.DataFrame(pd.Series(y_pred).value_counts()).reset_index().rename(columns={'index': 'Sentiment', 0: 'Count_Predicted'})
 
-# Debugging to print columns
-st.write("Actual counts columns:", actual_counts.columns)
-st.write("Predicted counts columns:", predicted_counts.columns)
+# Display the DataFrames for debugging
+st.write("Actual counts DataFrame:")
+st.write(actual_counts)
+
+st.write("Predicted counts DataFrame:")
+st.write(predicted_counts)
 
 # Ensure the Sentiment columns are properly aligned and match
 if 'Sentiment' in actual_counts.columns and 'Sentiment' in predicted_counts.columns:
