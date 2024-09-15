@@ -1,5 +1,6 @@
-nltk
 pandas
 scikit-learn
+nltk
+streamlit
 matplotlib
 seaborn
