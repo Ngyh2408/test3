@@ -4,6 +4,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score, classification_report
 import nltk
 from nltk.corpus import stopwords
 import string
@@ -56,6 +57,13 @@ for name, model in models.items():
 
 # Save the TF-IDF vectorizer
 joblib.dump(tfidf, 'tfidf_vectorizer.joblib')
+
+# Evaluate models
+def evaluate_model(model, X_test, y_test):
+    y_pred = model.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+    report = classification_report(y_test, y_pred, target_names=['negative', 'positive'])
+    return accuracy, report
 
 # Streamlit app header
 st.title('Sentiment Analysis on Product Reviews')
@@ -132,6 +140,14 @@ if uploaded_file is not None:
         review_count_table = pd.DataFrame({'Sentiment': sentiment_labels, 'Review Count': sentiment_sizes})
         st.write("### Review Count Table (Uploaded File):")
         st.table(review_count_table)
+
+        # Evaluate model performance on the test set
+        model = joblib.load('naive_bayes_model.joblib')
+        accuracy, report = evaluate_model(model, X_tfidf, y)
+        st.write("### Model Evaluation Metrics:")
+        st.write(f"**Accuracy:** {accuracy:.2f}")
+        st.write("**Classification Report:**")
+        st.text(report)
 
 # User input for predicting sentiment
 user_comment = st.text_input("Enter your product review:")
