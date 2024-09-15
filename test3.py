@@ -77,14 +77,23 @@ def predict_sentiment(user_comment, model):
 if uploaded_file is not None:
     # Read the file
     uploaded_df = pd.read_csv(uploaded_file)
+
+    # Auto-detect the review column
+    possible_columns = ['review', 'text', 'content']
+    review_column = None
     
-    # Display the columns to the user for column name selection
-    st.write("### Available Columns in the Uploaded File:")
-    st.write(uploaded_df.columns)
-    
-    # Allow the user to select the column with reviews
-    review_column = st.selectbox("Select the column containing reviews:", options=uploaded_df.columns)
-    
+    for column in uploaded_df.columns:
+        if any(keyword in column.lower() for keyword in possible_columns):
+            review_column = column
+            break
+
+    if review_column is None:
+        st.error("No suitable review column detected. Please select the column manually.")
+        # Display available columns and let the user select if auto-detection fails
+        st.write("### Available Columns in the Uploaded File:")
+        st.write(uploaded_df.columns)
+        review_column = st.selectbox("Select the column containing reviews:", options=uploaded_df.columns)
+
     if review_column:
         # Ensure the selected column is a string
         uploaded_df[review_column] = uploaded_df[review_column].astype(str)
