@@ -68,9 +68,19 @@ unique_labels = sorted(set(y_test) | set(y_pred))
 cm = confusion_matrix(y_test, y_pred, labels=unique_labels)
 plot_confusion_matrix(cm, unique_labels)
 
+# Debug: Show sample data for y_test and y_pred
+st.write("Sample y_test values:")
+st.write(y_test.head())
+st.write("Sample y_pred values:")
+st.write(pd.Series(y_pred).head())
+
 # Create DataFrames for actual and predicted sentiment counts
-actual_counts = pd.DataFrame(y_test.value_counts()).reset_index().rename(columns={'index': 'Sentiment', 'Sentiment': 'Count_Actual'})
-predicted_counts = pd.DataFrame(pd.Series(y_pred).value_counts()).reset_index().rename(columns={'index': 'Sentiment', 0: 'Count_Predicted'})
+# Verify creation and renaming of columns
+actual_counts = pd.DataFrame(y_test.value_counts()).reset_index()
+actual_counts.columns = ['Sentiment', 'Count_Actual']
+
+predicted_counts = pd.DataFrame(pd.Series(y_pred).value_counts()).reset_index()
+predicted_counts.columns = ['Sentiment', 'Count_Predicted']
 
 # Display DataFrames for debugging
 st.write("Actual counts DataFrame:")
@@ -79,7 +89,7 @@ st.write(actual_counts)
 st.write("Predicted counts DataFrame:")
 st.write(predicted_counts)
 
-# Check if the 'Sentiment' column exists and fix if missing
+# Ensure the Sentiment columns are properly aligned and match
 if 'Sentiment' in actual_counts.columns and 'Sentiment' in predicted_counts.columns:
     actual_counts['Sentiment'] = actual_counts['Sentiment'].astype(str)
     predicted_counts['Sentiment'] = predicted_counts['Sentiment'].astype(str)
