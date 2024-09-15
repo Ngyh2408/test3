@@ -10,7 +10,6 @@ import string
 import joblib  # Import joblib for saving/loading models
 import streamlit as st
 import matplotlib.pyplot as plt
-from io import StringIO
 
 # Download stopwords
 nltk.download('stopwords')
@@ -76,15 +75,21 @@ def predict_sentiment(user_comment, model):
 
 # Handle file upload
 if uploaded_file is not None:
-    # Read and preprocess the uploaded file
+    # Read the file
     uploaded_df = pd.read_csv(uploaded_file)
-    if 'Review' not in uploaded_df.columns:
-        st.error("The uploaded file must contain a 'Review' column.")
-    else:
-        # Ensure 'Review' column is a string
-        uploaded_df['Review'] = uploaded_df['Review'].astype(str)
-        uploaded_df['Review'] = uploaded_df['Review'].apply(preprocess_text)
-        X_uploaded = uploaded_df['Review']
+    
+    # Display the columns to the user for column name selection
+    st.write("### Available Columns in the Uploaded File:")
+    st.write(uploaded_df.columns)
+    
+    # Allow the user to select the column with reviews
+    review_column = st.selectbox("Select the column containing reviews:", options=uploaded_df.columns)
+    
+    if review_column:
+        # Ensure the selected column is a string
+        uploaded_df[review_column] = uploaded_df[review_column].astype(str)
+        uploaded_df[review_column] = uploaded_df[review_column].apply(preprocess_text)
+        X_uploaded = uploaded_df[review_column]
         X_uploaded_tfidf = tfidf.transform(X_uploaded)
         
         # Load the Naive Bayes model by default
@@ -122,6 +127,11 @@ if user_comment:
     # Load the Naive Bayes model
     model = joblib.load('naive_bayes_model.joblib')
     sentiment = predict_sentiment(user_comment, model)
-    st.write(f"*The sentiment of the comment is:* {sentiment}")
+    
+    # Define color based on sentiment
+    color = 'green' if sentiment == 'positive' else 'red'
+    
+    # Display sentiment with color
+    st.markdown(f"<p style='color:{color}; font-size:20px;'>*The sentiment of the comment is:* {sentiment}</p>", unsafe_allow_html=True)
 
 # The pie chart is displayed only if a file is uploaded
