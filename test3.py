@@ -77,13 +77,28 @@ def predict_sentiment(user_comment, model):
 if uploaded_file is not None:
     # Read and preprocess the uploaded file
     uploaded_df = pd.read_csv(uploaded_file)
-    if 'Review' not in uploaded_df.columns:
-        st.error("The uploaded file must contain a 'Review' column.")
-    else:
-        # Ensure 'Review' column is a string
-        uploaded_df['Review'] = uploaded_df['Review'].astype(str)
-        uploaded_df['Review'] = uploaded_df['Review'].apply(preprocess_text)
-        X_uploaded = uploaded_df['Review']
+    
+    # Auto-detect the review column
+    possible_columns = ['review', 'text', 'content']
+    review_column = None
+    
+    for column in uploaded_df.columns:
+        if any(keyword in column.lower() for keyword in possible_columns):
+            review_column = column
+            break
+
+    if review_column is None:
+        st.error("No suitable review column detected. Please select the column manually.")
+        # Display available columns and let the user select if auto-detection fails
+        st.write("### Available Columns in the Uploaded File:")
+        st.write(uploaded_df.columns)
+        review_column = st.selectbox("Select the column containing reviews:", options=uploaded_df.columns)
+
+    if review_column:
+        # Ensure the selected column is a string
+        uploaded_df[review_column] = uploaded_df[review_column].astype(str)
+        uploaded_df[review_column] = uploaded_df[review_column].apply(preprocess_text)
+        X_uploaded = uploaded_df[review_column]
         X_uploaded_tfidf = tfidf.transform(X_uploaded)
         
         # Load the Naive Bayes model by default
@@ -123,11 +138,14 @@ if user_comment:
     sentiment = predict_sentiment(user_comment, model)
     
     # Define color based on sentiment
-    color = 'green' if sentiment == 'positive' else 'red'
+    if sentiment == 'positive':
+        sentiment_html = "<p style='font-size:20px;'>The sentiment of the comment is: <span style='color:green;'>positive</span></p>"
+    elif sentiment == 'negative':
+        sentiment_html = "<p style='font-size:20px;'>The sentiment of the comment is: <span style='color:red;'>negative</span></p>"
+    else:
+        sentiment_html = f"<p style='font-size:20px;'>The sentiment of the comment is: {sentiment}</p>"
     
     # Display sentiment with color
-    sentiment_text = f"*The sentiment of the comment is:* {sentiment}"
-    sentiment_html = f"<p style='color:{color}; font-size:20px;'>{sentiment_text}</p>"
     st.markdown(sentiment_html, unsafe_allow_html=True)
 
 # The pie chart is displayed only if a file is uploaded
