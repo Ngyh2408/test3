@@ -81,4 +81,4 @@ user_comment = st.text_input("Enter your product review:")
 
 if user_comment:
     sentiment = predict_sentiment(user_comment)
-    st.write(f"The sentiment of the comment is: {sentiment}")
+    st.write(f"The sentiment of the comment is: {sentiment}")
