@@ -10,21 +10,13 @@ import string
 import joblib  # Import joblib for saving/loading models
 import streamlit as st
 import matplotlib.pyplot as plt
+from io import StringIO
 
 # Download stopwords
 nltk.download('stopwords')
 
 # Load the dataset
 df = pd.read_csv('Dataset-SA.csv')
-
-# Count the number of reviews in the dataset
-total_reviews = len(df)
-
-# Streamlit app header
-st.title('Sentiment Analysis on Product Reviews')
-
-# Display the total number of reviews before preprocessing
-st.write(f"*Total Number of Reviews before Preprocessing:* {total_reviews}")
 
 # Preprocessing function
 stop_words = set(stopwords.words('english'))
@@ -64,33 +56,14 @@ for name, model in models.items():
 # Save the TF-IDF vectorizer
 joblib.dump(tfidf, 'tfidf_vectorizer.joblib')
 
-# Load the Naive Bayes model for displaying results
-model = joblib.load('naive_bayes_model.joblib')  # Load Naive Bayes model as default for further steps
-y_pred = model.predict(X_test)
+# Streamlit app header
+st.title('Sentiment Analysis on Product Reviews')
 
-# Create DataFrames for actual and predicted sentiment counts
-actual_counts = pd.DataFrame(y_test.value_counts()).reset_index()
-actual_counts.columns = ['Sentiment', 'Count_Actual']
+# Display the total number of reviews before preprocessing
+st.write(f"*Total Number of Reviews before Preprocessing:* {len(df)}")
 
-predicted_counts = pd.DataFrame(pd.Series(y_pred).value_counts()).reset_index()
-predicted_counts.columns = ['Sentiment', 'Count_Predicted']
-
-# Merge actual and predicted counts
-sentiment_comparison = pd.merge(actual_counts, predicted_counts, on='Sentiment', how='outer').fillna(0)
-
-# Plot actual vs predicted sentiment comparison
-st.write("### Actual vs Predicted Sentiment Comparison (Naive Bayes):")
-fig, ax = plt.subplots(figsize=(8, 6))
-sentiment_comparison.plot(kind='bar', x='Sentiment', ax=ax, color=['skyblue', 'orange'])
-plt.title('Actual vs Predicted Sentiment Counts (Naive Bayes)')
-plt.xlabel('Sentiment')
-plt.ylabel('Count')
-plt.xticks(rotation=45)
-st.pyplot(fig)
-
-# Display the count of actual and predicted reviews in a table under the bar chart
-st.write("### Actual and Predicted Review Counts Table:")
-st.table(sentiment_comparison)
+# File uploader
+uploaded_file = st.file_uploader("Upload a CSV file containing reviews")
 
 # Predict sentiment with the selected model (Naive Bayes as default)
 def predict_sentiment(user_comment, model):
@@ -99,34 +72,52 @@ def predict_sentiment(user_comment, model):
     prediction = model.predict(user_comment_tfidf)
     return prediction[0]
 
+# Handle file upload
+if uploaded_file is not None:
+    # Read and preprocess the uploaded file
+    uploaded_df = pd.read_csv(uploaded_file)
+    if 'Review' not in uploaded_df.columns:
+        st.error("The uploaded file must contain a 'Review' column.")
+    else:
+        uploaded_df['Review'] = uploaded_df['Review'].apply(preprocess_text)
+        X_uploaded = uploaded_df['Review']
+        X_uploaded_tfidf = tfidf.transform(X_uploaded)
+        
+        # Load the Naive Bayes model by default
+        model = joblib.load('naive_bayes_model.joblib')
+        y_pred_uploaded = model.predict(X_uploaded_tfidf)
+        uploaded_df['Sentiment'] = y_pred_uploaded
+        
+        # Calculate sentiment distribution
+        sentiment_distribution = uploaded_df['Sentiment'].value_counts()
+        sentiment_labels = sentiment_distribution.index
+        sentiment_sizes = sentiment_distribution.values
+
+        # Define colors for sentiment categories
+        colors = ['lightblue', 'lightcoral', 'lightgreen', 'lightskyblue']
+
+        # Calculate percentages
+        sentiment_percentages = sentiment_sizes / sentiment_sizes.sum() * 100
+
+        # Plot pie chart
+        st.write("### Sentiment Distribution Pie Chart (Uploaded File):")
+        fig, ax = plt.subplots(figsize=(8, 6))
+        ax.pie(sentiment_percentages, labels=sentiment_labels, autopct='%1.1f%%', startangle=140, colors=colors[:len(sentiment_labels)])
+        ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+        st.pyplot(fig)
+
+        # Display the review count table
+        review_count_table = pd.DataFrame({'Sentiment': sentiment_labels, 'Review Count': sentiment_sizes})
+        st.write("### Review Count Table (Uploaded File):")
+        st.table(review_count_table)
+
 # User input for predicting sentiment
-st.write("### Predict Sentiment from Your Review (Using Naive Bayes)")
 user_comment = st.text_input("Enter your product review:")
 
 if user_comment:
+    # Load the Naive Bayes model
+    model = joblib.load('naive_bayes_model.joblib')
     sentiment = predict_sentiment(user_comment, model)
     st.write(f"*The sentiment of the comment is:* {sentiment}")
 
-# Calculate sentiment distribution
-st.write("### Sentiment Distribution (Post-Processing):")
-sentiment_distribution = df['Sentiment'].value_counts()
-sentiment_labels = sentiment_distribution.index
-sentiment_sizes = sentiment_distribution.values
-
-# Define colors for sentiment categories
-colors = ['lightblue', 'lightcoral', 'lightgreen', 'lightskyblue']
-
-# Calculate percentages
-sentiment_percentages = sentiment_sizes / sentiment_sizes.sum() * 100
-
-# Plot pie chart
-st.write("### Sentiment Distribution Pie Chart:")
-fig, ax = plt.subplots(figsize=(8, 6))
-ax.pie(sentiment_percentages, labels=sentiment_labels, autopct='%1.1f%%', startangle=140, colors=colors[:len(sentiment_labels)])
-ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
-st.pyplot(fig)
-
-# Display the review count table again under the pie chart
-review_count_table = pd.DataFrame({'Sentiment': sentiment_labels, 'Review Count': sentiment_sizes})
-st.write("### Review Count Table:")
-st.table(review_count_table)
+# The pie chart is displayed only if a file is uploaded
