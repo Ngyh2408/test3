@@ -1,5 +1,4 @@
 # Saving the provided code to a Python file named "sentiment_analysis.py"
-code = '''
 # Import necessary libraries
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -16,7 +15,7 @@ import string
 nltk.download('stopwords')
 
 # Load the dataset (adjust the path to your dataset)
-df = pd.read_csv('C:/Users/yikheng/Downloads/dd/Dataset-SA.csv')
+df = pd.read_csv('Dataset-SA.csv')
 
 # Check the columns in your dataset to confirm column names
 print(df.columns)
